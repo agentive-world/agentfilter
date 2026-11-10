@@ -37,9 +37,16 @@ Reason: Blocked by \.env$ (Environment files)
 
 ## What it does
 
-Intercepts tool calls (file reads, writes, edits, bash commands) **before they
-execute** and blocks access to sensitive paths: SSH keys, cloud credentials,
-environment files, GPG keyrings, and anything with restrictive file permissions.
+Two shields, one plugin:
+
+- **Path shield** — intercepts tool calls (file reads, writes, edits, bash
+  commands) **before they execute** and blocks access to sensitive paths:
+  SSH keys, cloud credentials, environment files, GPG keyrings, and anything
+  with restrictive file permissions.
+- **Content shield** — scrubs PII (credit cards, SSNs, emails, phone numbers,
+  API keys, JWTs, private key headers, ...) from message text **before the
+  model sees it**, so secrets typed into the prompt never reach the model or
+  its provider (OpenCode 2.x).
 
 Decisions use **specificity-based precedence** so more-specific rules always win
 and allowlists can coexist with denylists at different levels.

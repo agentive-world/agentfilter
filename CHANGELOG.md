@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0] - 2026-11-10
+
+### Added
+- **Content shield**: regex-mode PII redaction (15 patterns: credit card, SSN, email, phone US/CN, IPv4, DOB, API keys, AWS keys, GitHub tokens, passwords, JWT, private key headers) scrubbed from message text before the model sees them (`session.hook("context")`, OpenCode 2.x). Pure TypeScript port of privacy-filter.py's regex mode — zero dependencies, no engine call
+- `AGENTFILTER_DISABLE_CONTENT_SHIELD=1` opt-out
+- 18 content-shield tests
+
+### Changed
+- The OpenCode plugin now installs **both shields in one file**: path shield (`tool.execute.before`, all OpenCode generations) + content shield (2.x). The separate privacy-filter plugin is retired
+- Repo moved to the `agentive-world` organization
+
 ## [0.4.0] - 2026-11-10
 
 ### Added
