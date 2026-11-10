@@ -1,0 +1,90 @@
+#!/bin/sh
+#
+# pre-commit hook
+#
+# Sections:
+#   1. bd (beads) — flush pending issue changes to JSONL
+#   2. uv export — regenerate requirements.txt / requirements.dev.txt
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# ── 1. Beads flush ─────────────────────────────────────────────
+beads_flush() {
+    if ! command -v bd >/dev/null 2>&1; then
+        return 0
+    fi
+
+    BEADS_DIR=""
+    if git rev-parse --git-dir >/dev/null 2>&1; then
+        if [ "$(git rev-parse --git-dir)" != "$(git rev-parse --git-common-dir)" ]; then
+            MAIN_REPO_ROOT="$(git rev-parse --git-common-dir)"
+            MAIN_REPO_ROOT="$(dirname "$MAIN_REPO_ROOT")"
+            if [ -d "$MAIN_REPO_ROOT/.beads" ]; then
+                BEADS_DIR="$MAIN_REPO_ROOT/.beads"
+            fi
+        else
+            if [ -d .beads ]; then
+                BEADS_DIR=".beads"
+            fi
+        fi
+    fi
+
+    if [ -z "$BEADS_DIR" ]; then
+        return 0
+    fi
+
+    if [ -f "$BEADS_DIR/metadata.json" ]; then
+        if grep -q '"backend"[[:space:]]*:[[:space:]]*"dolt"' "$BEADS_DIR/metadata.json" 2>/dev/null; then
+            return 0
+        fi
+    fi
+
+    if ! bd sync --flush-only >/dev/null 2>&1; then
+        echo "Error: Failed to flush bd changes to storage" >&2
+        echo "Run 'bd sync --flush-only' manually to diagnose" >&2
+        return 1
+    fi
+
+    if [ -f "$BEADS_DIR/issues.jsonl" ]; then
+        if [ "$(git rev-parse --git-dir)" = "$(git rev-parse --git-common-dir)" ]; then
+            git add "$BEADS_DIR/issues.jsonl" 2>/dev/null || true
+        fi
+    fi
+}
+
+# ── 2. uv export ──────────────────────────────────────────────
+uv_export_requirements() {
+    FILTER_DIR="$REPO_ROOT/opencode-security-filter"
+
+    if ! command -v uv >/dev/null 2>&1; then
+        return 0
+    fi
+
+    if [ ! -f "$FILTER_DIR/uv.lock" ]; then
+        return 0
+    fi
+
+    cd "$FILTER_DIR" || return 0
+
+    echo "pre-commit: exporting requirements from uv.lock"
+
+    if ! uv export --no-dev --no-emit-project --frozen -o requirements.txt >/dev/null; then
+        echo "Error: uv export failed for requirements.txt" >&2
+        return 1
+    fi
+
+    if ! uv export --all-extras --all-groups --frozen --no-emit-project -o requirements.dev.txt >/dev/null; then
+        echo "Error: uv export failed for requirements.dev.txt" >&2
+        return 1
+    fi
+
+    git add requirements.txt requirements.dev.txt 2>/dev/null || true
+
+    cd "$REPO_ROOT" || true
+}
+
+# ── Run all sections ───────────────────────────────────────────
+beads_flush || exit 1
+uv_export_requirements || exit 1
+
+exit 0

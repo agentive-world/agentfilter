@@ -1,0 +1,27 @@
+{
+  "description": "Security filter hooks that check file paths against blocked patterns before tool execution",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Write|Edit|MultiEdit|Glob|Grep|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/opencode-security-filter/src/security_filter_hook.py",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/opencode-security-filter/src/security_filter_hook.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

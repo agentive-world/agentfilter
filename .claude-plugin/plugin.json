@@ -1,0 +1,8 @@
+{
+  "name": "agentfilter",
+  "version": "0.4.0",
+  "description": "Security filter that blocks Claude Code from accessing sensitive files (SSH keys, credentials, env files) using the opencode-security-filter Python CLI",
+  "author": {
+    "name": "David Pham"
+  }
+}
