@@ -1,11 +1,12 @@
 {
   "name": "@dotfiles/opencode-security-plugin",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Security plugin for OpenCode that filters sensitive file access using AST-based bash parsing",
   "type": "module",
   "main": "src/security-filter.ts",
   "scripts": {
-    "install-to-opencode": "cp src/security-filter.ts ~/.config/opencode/plugins/",
+    "build": "bun build src/security-filter.ts --outdir dist --target node --format esm",
+    "install-to-opencode": "bun run build && mkdir -p ~/.config/opencode/plugins/ && cp dist/security-filter.js ~/.config/opencode/plugins/agentfilter.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },

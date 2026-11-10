@@ -12,8 +12,17 @@ import parse from "bash-parser"
  * Uses bash-parser for proper AST-based extraction of file paths from bash commands.
  *
  * Install: uv pip install -e ../opencode-security-filter
+ *
+ * Entry points follow the OpenCode plugin loader surface (verified across
+ * 1.3.3-2.2.5 in safedep/gryph#100):
+ * - `export const SecurityFilterPlugin` is called by OpenCode 1.x <= 1.3.3.
+ * - `default.server` is called by OpenCode 1.3.4+ (1.x loader).
+ * - `default.setup` registers each hook on its owning domain in OpenCode 2.x,
+ *   whose payload is `{ tool, sessionID, id, input }` instead of
+ *   `(tool input, output)`.
  */
-export const SecurityFilterPlugin: Plugin = async ({ client }) => {
+
+const createSecurityFilter = (client?: unknown) => {
   const home = homedir()
 
   // Commands that read files (check all path arguments)
@@ -246,7 +255,18 @@ You MUST propose alternative approaches that don't require sensitive file access
         return { allowed: false, reason }
       }
       console.warn(`[security-filter] Check failed for ${path}:`, err)
-      return { allowed: true, reason: "Filter unavailable" }
+      // Fail-closed by default (matches the documented security posture).
+      // Engines can be temporarily unavailable (CLI not on PATH, timeout);
+      // operators who prefer availability over strictness can opt out.
+      if (process.env.SECURITY_FILTER_ALLOW_UNCHECKED === "1") {
+        return { allowed: true, reason: "Filter unavailable (allowed by SECURITY_FILTER_ALLOW_UNCHECKED)" }
+      }
+      return {
+        allowed: false,
+        reason:
+          "Filter unavailable: the opencode-security-filter CLI could not be reached. " +
+          "Install it (uv pip install opencode-security-filter) or set SECURITY_FILTER_ALLOW_UNCHECKED=1 to allow unchecked paths.",
+      }
     }
   }
 
@@ -273,7 +293,6 @@ You MUST propose alternative approaches that don't involve searching for sensiti
         input.tool,
         output.args as Record<string, unknown>
       )
-
       // Check search patterns against Python security filter
       // The filter has rules for sensitive filenames like id_rsa, id_ed25519, etc.
       for (const pattern of searchPatterns) {
@@ -296,3 +315,41 @@ You MUST propose alternative approaches that don't involve searching for sensiti
     },
   }
 }
+
+/**
+ * OpenCode 1.x entry: loaders <= 1.3.3 call the named export, and 1.3.4+
+ * calls default.server. Both receive the shared client context and return
+ * the hook map. This is the same dual-entry shape proven across
+ * OpenCode 1.3.3-2.2.5 in safedep/gryph#100.
+ */
+const server: Plugin = async (ctx?: { client?: unknown }) =>
+  createSecurityFilter(ctx?.client)
+
+export const SecurityFilterPlugin = server
+
+/**
+ * OpenCode 2.x entry: the loader calls setup(ctx) and each hook must be
+ * registered on the domain that owns it ("execute.before" on ctx.tool).
+ * The V2 hook payload is `{ tool, sessionID, id, input }`; adapt it to the
+ * (tool input, output) signature used by the 1.x hook map so both entries
+ * share one gate implementation. Blocking works the same way: throw from
+ * the hook and OpenCode turns the error into a tool-level denial.
+ */
+async function setup(ctx: {
+  tool?: {
+    hook: (
+      name: string,
+      fn: (event: { tool?: string; input?: Record<string, unknown> }) => void | Promise<void>,
+    ) => unknown
+  }
+  client?: unknown
+}) {
+  const hooks = createSecurityFilter(ctx?.client)
+  const before = hooks["tool.execute.before"]
+  if (!before || !ctx?.tool) return
+  await ctx.tool.hook("execute.before", async (event) => {
+    await before({ tool: event?.tool ?? "" }, { args: event?.input ?? {} })
+  })
+}
+
+export default { id: "agentfilter", server, setup }
