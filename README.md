@@ -11,6 +11,10 @@ filter engine.
 ![OpenCode](https://img.shields.io/badge/OpenCode-1.x%20%7C%202.x-orange)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-purple)
 
+<p align="center">
+  <img src="docs/demo.gif" alt="agentfilter: a .env read is blocked before execution; an SSN typed into the prompt is redacted to [SSN] before the model sees it" width="680">
+</p>
+
 ## Why
 
 Coding agents have blanket read access to everything within reach. A single
