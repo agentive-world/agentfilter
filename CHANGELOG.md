@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.0] - 2026-11-10
+
+### Added
+- OpenCode plugin dual entry points for every loader generation: named export (1.x ≤ 1.3.3), `default.server` (1.3.4+), `default.setup` registering `ctx.tool.hook("execute.before")` (2.x)
+- Single-file bundle build (`bun run build`); `install-to-opencode` now builds and copies the bundle as `agentfilter.js`
+- Entry-point shape tests (`src/__tests__/exports.test.ts`)
+- CONTRIBUTING.md and SECURITY.md
+
+### Changed
+- Plugin identity renamed to `agentfilter` to avoid clashing with directory-style installs of the old plugin
+- README refreshed: agentfilter branding, why/demo sections, updated OpenCode install
+
+### Fixed
+- `checkPath` failed open when the engine CLI was unreachable; it now fails closed by default (`SECURITY_FILTER_ALLOW_UNCHECKED=1` restores availability-first behavior)
+
 ## [0.3.0] - 2026-02-23
 
 ### Added

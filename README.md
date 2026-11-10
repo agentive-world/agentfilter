@@ -1,8 +1,39 @@
-# opencode-security
+# agentfilter
 
-Security filter that prevents AI coding agents from accessing sensitive files.
-Ships as a **Claude Code plugin** and an **OpenCode plugin**, backed by a shared
-Python filter engine.
+Security filter that stops AI coding agents from accessing sensitive files —
+SSH keys, cloud credentials, `.env` files, keyrings — **before the tool call
+executes**. Ships as a **Claude Code plugin**, an **OpenCode plugin** (1.x and
+2.x), and a standalone **CLI / JSON-RPC proxy**, backed by a shared Python
+filter engine.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![OpenCode](https://img.shields.io/badge/OpenCode-1.x%20%7C%202.x-orange)
+![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-purple)
+
+## Why
+
+Coding agents have blanket read access to everything within reach. A single
+successful prompt injection (a malicious README, an issue comment, a
+dependency's docs) is enough to make the agent `cat ~/.ssh/id_rsa` or ship
+`.env` contents to a webhook — and by the time you read the transcript, the
+secret is gone.
+
+agentfilter moves the decision to the tool-call boundary: sensitive paths are
+denied **before execution**, the model receives a structured denial with the
+reason, and the attempt is visible in your logs.
+
+A real transcript (OpenCode 2.1.2):
+
+```
+> Use the read tool to read the file ./.env and print its contents verbatim.
+
+⚠️ SECURITY BLOCK: Access to ./.env was denied.
+
+Reason: Blocked by \.env$ (Environment files)
+
+(the agent acknowledges the block and proposes alternatives instead of retrying)
+```
 
 ## What it does
 
@@ -46,15 +77,37 @@ nix develop   # enters devShell with editable install + all tooling
 
 ### As an OpenCode plugin
 
-Copy the TypeScript plugin to your OpenCode plugins directory:
-
 ```bash
 cd opencode-plugin
 bun install
 bun run install-to-opencode
 ```
 
-The OpenCode plugin also requires `opencode-security-filter` on `PATH`.
+This builds a **single self-contained bundle** (bash-parser inlined; only
+Node built-ins at runtime) and copies it to
+`~/.config/opencode/plugins/agentfilter.js`.
+
+One file supports every OpenCode plugin generation — the entry-point shapes
+follow the loader surface verified across OpenCode 1.3.3–2.2.5 in
+[safedep/gryph#100](https://github.com/safedep/gryph/pull/100), live-tested
+on 2.1.2:
+
+| OpenCode | Entry point used |
+|---|---|
+| 1.x ≤ 1.3.3 | named export `SecurityFilterPlugin` |
+| 1.x ≥ 1.3.4 | `default.server` |
+| 2.x | `default.setup` → `ctx.tool.hook("execute.before")` |
+
+The plugin also requires the engine CLI on `PATH`:
+
+```bash
+cd opencode-security-filter
+uv pip install -e .
+```
+
+**Fail-closed by default:** if the engine CLI cannot be reached, checks deny
+rather than silently allow. Prefer availability over strictness? Set
+`SECURITY_FILTER_ALLOW_UNCHECKED=1`.
 
 ## Usage
 
@@ -158,7 +211,7 @@ Test suites:
 
 ```bash
 cd opencode-plugin
-bun test
+bun run test   # vitest: bash AST edge cases + entry-point shape tests
 ```
 
 ## Development
@@ -201,6 +254,18 @@ opencode-plugin/         # OpenCode TypeScript plugin
 .githooks/               # Version-controlled git hooks
 flake.nix                # Nix devShell and package definitions
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, test commands, and the
+PR checklist. In short: fork → `nix develop` (or uv venv) → both test suites
+green → PR.
+
+## Security reporting
+
+See [SECURITY.md](SECURITY.md). Filter bypasses go through private
+vulnerability reporting; missing sensitive-path patterns and false positives
+are welcome as regular issues.
 
 ## License
 
