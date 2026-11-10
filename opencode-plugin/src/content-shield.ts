@@ -29,7 +29,9 @@ export const CONTENT_PATTERNS: Array<[string, RegExp, string]> = [
   ["cvv", /\bcvv\s*[:=]?\s*\d{3,4}\b/gi, "[CVV]"],
   ["cvc", /\bcvc\s*[:=]?\s*\d{3,4}\b/gi, "[CVC]"],
   ["ssn", /\b\d{3}-\d{2}-\d{4}\b/gi, "[SSN]"],
-  ["email", /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/gi, "[EMAIL]"],
+  // Final label must be alphabetic: npm specs such as `senpi-pty@2026.11.9-2`
+  // otherwise read as local-part@numeric-domain and get redacted.
+  ["email", /\b[\w.+-]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}\b/gi, "[EMAIL]"],
   ["phone_us", /\b(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/gi, "[PHONE]"],
   ["phone_cn", /\b1[3-9]\d[-.\s]?\d{4}[-.\s]?\d{4}\b/gi, "[PHONE]"],
   ["ipv4", /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/gi, "[IP_ADDR]"],

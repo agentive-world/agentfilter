@@ -1,6 +1,6 @@
 {
   "name": "@dotfiles/opencode-security-plugin",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Security plugin for OpenCode that filters sensitive file access using AST-based bash parsing",
   "type": "module",
   "main": "src/security-filter.ts",

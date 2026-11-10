@@ -39,6 +39,17 @@ describe("content shield patterns", () => {
     expect(redacted).not.toContain("alice.smith")
   })
 
+  it("leaves npm package specs untouched", () => {
+    for (const text of [
+      "npm:@code-yeongyu/senpi-pty@2026.11.9-2 failed to resolve",
+      "a@b.c",
+    ]) {
+      const { redacted, findings } = redactText(text)
+      expect(redacted).toBe(text)
+      expect(findings).toHaveLength(0)
+    }
+  })
+
   it("redacts US and CN phone numbers", () => {
     const us = redactText("call +1 (415) 555-2671")
     const cn = redactText("call 138 0013 8000")

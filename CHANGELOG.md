@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.5.1] - 2026-11-10
+
+### Fixed
+- Content shield no longer redacts npm package specs as emails: the email pattern now requires an alphabetic TLD, so `senpi-pty@2026.11.9-2` survives instead of becoming `senpi-pty@[EMAIL]`
+
 ## [0.5.0] - 2026-11-10
 
 ### Added
