@@ -193,18 +193,20 @@ You MUST propose alternative approaches that don't require sensitive file access
     const searchPatterns: string[] = []
 
     switch (tool.toLowerCase()) {
+      // 1.x arg names: filePath/file_path. OpenCode 2.x renamed the read and
+      // write tools' primary argument to `path` and renamed the bash tool to
+      // `shell` (verified against a live 2.1.2 session). All shapes are
+      // accepted so one plugin serves every generation.
       case "read":
-        if (typeof args.filePath === "string") paths.push(args.filePath)
-        if (typeof args.file_path === "string") paths.push(args.file_path)
-        break
-
       case "write":
       case "edit":
         if (typeof args.filePath === "string") paths.push(args.filePath)
         if (typeof args.file_path === "string") paths.push(args.file_path)
+        if (typeof args.path === "string") paths.push(args.path)
         break
 
       case "bash":
+      case "shell":
         // Use bash-parser for proper AST-based extraction
         if (typeof args.command === "string") {
           try {
@@ -215,7 +217,7 @@ You MUST propose alternative approaches that don't require sensitive file access
             })
           } catch (e) {
             // Parse error - fall back to not blocking
-            console.warn("[security-filter] Failed to parse bash command:", e)
+            console.warn("[agentfilter] Failed to parse shell command:", e)
           }
         }
         break

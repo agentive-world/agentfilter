@@ -11,6 +11,9 @@
 - The OpenCode plugin now installs **both shields in one file**: path shield (`tool.execute.before`, all OpenCode generations) + content shield (2.x). The separate privacy-filter plugin is retired
 - Repo moved to the `agentive-world` organization
 
+### Fixed
+- Path checks silently passed on OpenCode 2.x: the read/write tools' primary argument is `path` (not 1.x's `file_path`/`filePath`) and the bash tool is named `shell`. All generations' tool shapes are now mapped and verified against a live 2.1.2 session
+
 ## [0.4.0] - 2026-11-10
 
 ### Added

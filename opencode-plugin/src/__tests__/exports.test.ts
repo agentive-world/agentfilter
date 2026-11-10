@@ -62,4 +62,24 @@ describe("plugin entry points", () => {
       before({ tool: "bash", input: { command: "echo hi" } }),
     ).resolves.toBeUndefined()
   })
+
+  it("checks OpenCode 2.x tool shapes: read uses `path`, bash is `shell`", async () => {
+    const hooks = await agentfilter.server({})
+    const before = hooks["tool.execute.before"] as (
+      input: { tool: string },
+      output: { args: Record<string, unknown> },
+    ) => Promise<void>
+
+    // 2.x renamed the read tool's argument to `path` and the bash tool to
+    // `shell`. Both must reach the shared gate. A sensitive path denies with
+    // the CLI present (pattern match) and without it (fail-closed), so the
+    // rejection is deterministic in every environment.
+    await expect(
+      before({ tool: "read" }, { args: { path: "~/.ssh/id_ed25519" } }),
+    ).rejects.toThrow(/SECURITY BLOCK/)
+    await expect(
+      before({ tool: "shell" }, { args: { command: "cat ~/.ssh/id_ed25519" } }),
+    ).rejects.toThrow(/SECURITY BLOCK/)
+  })
 })
+
